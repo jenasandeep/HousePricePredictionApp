@@ -1,0 +1,14 @@
+# Core libraries
+pandas==2.2.2
+numpy==1.26.4
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Machine Learning
+scikit-learn==1.7.2
+
+# Streamlit app
+streamlit==1.50.0
+
+# Optional (for model persistence)
+joblib==1.4.2 
