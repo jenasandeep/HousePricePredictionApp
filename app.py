@@ -1,98 +1,104 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 
 
-# Load the trained model artifac
+# Load Trained Model
 
 model_path = "model.pkl"
 
 try:
     with open(model_path, "rb") as file:
-        artifact = pickle.load(file)
-        pipeline = artifact['pipeline']
-        feature_columns = artifact['feature_columns']
-        numeric_features = artifact['numeric_features']
-        categorical_features = artifact['categorical_features']
-        model_name = artifact['model_name']
+        model = pickle.load(file)
 except FileNotFoundError:
-    st.error("⚠ Model file not found! Please ensure 'model.pkl' is in the same folder.")
+    st.error("⚠ model.pkl not found! Place it in the same folder as this app.")
     st.stop()
 
-# App Configuration
+
+# App Header
 
 st.set_page_config(page_title="🏠 House Price Prediction", layout="wide")
 st.title("🏡 House Price Prediction App")
-st.markdown(f"""
-Welcome to the *House Price Prediction* tool!  
-**Model loaded:** {model_name}  
-Provide property details below and get an *instant price prediction* 💰.
+st.markdown("""
+Welcome to the *Interactive House Price Predictor*!  
+Provide property details and get an *instant price prediction* with model comparison insights.
 """)
 
 
-# User Input Section
+# Sidebar Inputs
 
 st.sidebar.header("Enter Property Details")
 
-# Automatically create input fields based on feature types
-user_input = {}
-for feature in feature_columns:
-    if feature in numeric_features:
-        user_input[feature] = st.sidebar.number_input(
-            feature, min_value=0, value=0, step=1
-        )
-    elif feature in categorical_features:
-        # For simplicity, free text input; you can replace with selectbox if categories are known
-        user_input[feature] = st.sidebar.text_input(feature, value="")
+# Example features — match these to your dataset columns
+def user_input_features():
+    OverallQual = st.sidebar.slider("Overall Quality (1–10)", 1, 10, 5)
+    GrLivArea = st.sidebar.number_input("Above Ground Living Area (sq ft)", 500, 5000, 1500)
+    GarageCars = st.sidebar.slider("Garage Capacity (Cars)", 0, 5, 2)
+    TotalBsmtSF = st.sidebar.number_input("Total Basement Area (sq ft)", 0, 3000, 800)
+    YearBuilt = st.sidebar.slider("Year Built", 1900, 2025, 2000)
+    FullBath = st.sidebar.slider("Full Bathrooms", 0, 5, 2)
+    LotArea = st.sidebar.number_input("Lot Area (sq ft)", 1000, 20000, 8000)
 
-input_df = pd.DataFrame([user_input])
+    data = {
+        "OverallQual": OverallQual,
+        "GrLivArea": GrLivArea,
+        "GarageCars": GarageCars,
+        "TotalBsmtSF": TotalBsmtSF,
+        "YearBuilt": YearBuilt,
+        "FullBath": FullBath,
+        "LotArea": LotArea
+    }
+    return pd.DataFrame(data, index=[0])
 
-
-# Display user input
+input_df = user_input_features()
 
 st.subheader("📋 Entered Property Details")
 st.write(input_df)
 
 
-# Make Prediction
+# Align Columns to Model Input
+
+# Some models (like pipelines) have a method 'feature_names_in_'
+try:
+    model_features = model.feature_names_in_
+    input_df = input_df.reindex(columns=model_features, fill_value=0)
+except AttributeError:
+    st.info("ℹ Model does not have feature_names_in_. Proceeding with input features only.")
+
+
+# Predict Button
 
 if st.button("Predict House Price"):
     try:
-        prediction = pipeline.predict(input_df)[0]
-        st.success(f"🏠 Predicted House Price: ₹{prediction:,.2f}")
+        prediction = model.predict(input_df)
+        st.success(f"🏠 *Predicted House Price:* ${prediction[0]:,.2f}")
     except Exception as e:
-        st.error(f"Prediction failed: {e}")
+        st.error(f"❌ Prediction failed due to: {e}")
 
 
-# Visualization Section
-st.subheader("📊 Feature Influence (Example Visualization)")
+# Feature Importance Visualization
+
+st.subheader("📊 Feature Influence")
 
 try:
-    estimator = pipeline
-    if hasattr(pipeline, "steps"):
-        estimator = pipeline.steps[-1][1]
+    if hasattr(model, "feature_importances_"):
+        features = model.feature_names_in_ if hasattr(model, "feature_names_in_") else input_df.columns
+        importance = model.feature_importances_
 
-    if hasattr(estimator, "feature_importances_"):
-        importance = estimator.feature_importances_
-
-        # Generate feature names safely
-        # Use numeric + categorical combined if feature names mismatch
-        if len(feature_columns) == len(importance):
-            names = feature_columns
-        else:
-            # Fallback: generic names
-            names = [f"Feature {i+1}" for i in range(len(importance))]
-            st.info("⚠ Feature names do not match transformed features; using placeholder names.")
-
-        # Plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.barh(names, importance)
-        ax.set_xlabel("Importance")
-        ax.set_title("Feature Importance")
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.barh(features, importance)
+        ax.set_xlabel("Feature Importance")
+        ax.set_title("Feature Importance Visualization")
         st.pyplot(fig)
     else:
-        st.info("Feature importance not available for this model.")
-
+        st.info("ℹ This model does not support feature importance visualization.")
 except Exception as e:
-    st.warning(f"Could not display feature importance: {e}")
+    st.warning(f"⚠ Could not display feature importance: {e}")
+
+
+# Footer
+
+st.markdown("---")
+st.markdown("Developed by *Sandeep Kumar Jena* | 5th Semester ML Internship Project (2025)")
