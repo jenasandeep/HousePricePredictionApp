@@ -66,21 +66,47 @@ if st.button("Predict House Price"):
 
 
 # Visualization Section
-
 st.subheader("📊 Feature Influence (Example Visualization)")
 st.markdown("Feature importance chart shows how each input affects the predicted price.")
 
 try:
-    # If pipeline ends with a tree-based model, show feature importance
+    # Extract final estimator from pipeline
     estimator = pipeline
-    # If pipeline is a full sklearn Pipeline, extract final estimator
     if hasattr(pipeline, "steps"):
         estimator = pipeline.steps[-1][1]
 
     if hasattr(estimator, "feature_importances_"):
         importance = estimator.feature_importances_
-        fig, ax = plt.subplots()
-        ax.barh(feature_columns, importance)
+
+        # Get the transformed feature names
+        transformed_feature_names = []
+
+        if hasattr(pipeline, "named_steps") and "preprocessor" in pipeline.named_steps:
+            preprocessor = pipeline.named_steps["preprocessor"]
+
+            # Numeric features
+            if hasattr(preprocessor, "transformers"):
+                for name, transformer, cols in preprocessor.transformers:
+                    if transformer == "drop":
+                        continue
+                    if hasattr(transformer, "get_feature_names_out"):
+                        transformed_feature_names.extend(transformer.get_feature_names_out(cols))
+                    else:
+                        transformed_feature_names.extend(cols)
+        else:
+            # Fallback: use original feature_columns
+            transformed_feature_names = feature_columns
+
+        # Make sure length matches importance
+        if len(transformed_feature_names) != len(importance):
+            st.warning("⚠ Feature names and importances length mismatch. Showing top features only.")
+            min_len = min(len(transformed_feature_names), len(importance))
+            transformed_feature_names = transformed_feature_names[:min_len]
+            importance = importance[:min_len]
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(transformed_feature_names, importance)
         ax.set_xlabel("Importance")
         ax.set_title("Feature Importance")
         st.pyplot(fig)
@@ -88,9 +114,3 @@ try:
         st.info("Feature importance not available for this model.")
 except Exception as e:
     st.warning(f"Could not display feature importance: {e}")
-
-
-# Footer
-
-st.markdown("---")
-st.markdown("Developed by *[Your Name]* — Machine Learning Internship Project 2025")
