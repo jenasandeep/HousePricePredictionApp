@@ -3,9 +3,9 @@ import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
 
-# -------------------------------------------------
-# Load the trained model artifact
-# -------------------------------------------------
+
+# Load the trained model artifac
+
 model_path = "model.pkl"
 
 try:
@@ -20,9 +20,8 @@ except FileNotFoundError:
     st.error("⚠ Model file not found! Please ensure 'model.pkl' is in the same folder.")
     st.stop()
 
-# -------------------------------------------------
 # App Configuration
-# -------------------------------------------------
+
 st.set_page_config(page_title="🏠 House Price Prediction", layout="wide")
 st.title("🏡 House Price Prediction App")
 st.markdown(f"""
@@ -31,9 +30,9 @@ Welcome to the *House Price Prediction* tool!
 Provide property details below and get an *instant price prediction* 💰.
 """)
 
-# -------------------------------------------------
+
 # User Input Section
-# -------------------------------------------------
+
 st.sidebar.header("Enter Property Details")
 
 # Automatically create input fields based on feature types
@@ -49,15 +48,15 @@ for feature in feature_columns:
 
 input_df = pd.DataFrame([user_input])
 
-# -------------------------------------------------
+
 # Display user input
-# -------------------------------------------------
+
 st.subheader("📋 Entered Property Details")
 st.write(input_df)
 
-# -------------------------------------------------
+
 # Make Prediction
-# -------------------------------------------------
+
 if st.button("Predict House Price"):
     try:
         prediction = pipeline.predict(input_df)[0]
@@ -65,9 +64,9 @@ if st.button("Predict House Price"):
     except Exception as e:
         st.error(f"Prediction failed: {e}")
 
-# -------------------------------------------------
+
 # Visualization Section
-# -------------------------------------------------
+
 st.subheader("📊 Feature Influence (Example Visualization)")
 st.markdown("Feature importance chart shows how each input affects the predicted price.")
 
@@ -90,8 +89,8 @@ try:
 except Exception as e:
     st.warning(f"Could not display feature importance: {e}")
 
-# -------------------------------------------------
+
 # Footer
-# -------------------------------------------------
+
 st.markdown("---")
 st.markdown("Developed by *[Your Name]* — Machine Learning Internship Project 2025")
