@@ -61,11 +61,9 @@ st.write(input_df)
 # Align Columns to Model Input
 
 # Some models (like pipelines) have a method 'feature_names_in_'
-try:
-    model_features = model.feature_names_in_
-    input_df = input_df.reindex(columns=model_features, fill_value=0)
-except AttributeError:
-    st.info("ℹ Model does not have feature_names_in_. Proceeding with input features only.")
+if hasattr(model, "feature_names_in_"):
+    input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
+# silently continue if not available
 
 
 # Predict Button
